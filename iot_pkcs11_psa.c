@@ -1934,6 +1934,7 @@ CK_DEFINE_FUNCTION( CK_RV, C_GetAttributeValue )( CK_SESSION_HANDLE xSession,
                             else
                             {
                                 key_algorithm = psa_get_key_algorithm( &key_attributes );
+                                psa_reset_key_attributes( &key_attributes );
                             }
                         }
                         if( xResult == CKR_OK )
@@ -2703,6 +2704,7 @@ CK_DEFINE_FUNCTION( CK_RV, C_SignInit )( CK_SESSION_HANDLE xSession,
                     {
                         key_algorithm = psa_get_key_algorithm( &key_attributes );
                         pxSession->xSignAlgorithm = key_algorithm;
+                        psa_reset_key_attributes( &key_attributes );
                     }
                     else
                     {
@@ -2987,6 +2989,7 @@ CK_DEFINE_FUNCTION( CK_RV, C_VerifyInit )( CK_SESSION_HANDLE xSession,
                 {
                     key_algorithm = psa_get_key_algorithm( &key_attributes );
                     pxSession->xVerifyAlgorithm = key_algorithm;
+                    psa_reset_key_attributes( &key_attributes );
                 }
             }
             else
