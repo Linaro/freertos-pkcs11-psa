@@ -213,7 +213,7 @@ CK_OBJECT_HANDLE PKCS11PSASaveObject( CK_ATTRIBUTE_PTR pxClass,
             {
                 /* Device private key is saved as persistent key. */
                 psa_set_key_id( &key_attributes, PSA_DEVICE_PRIVATE_KEY_ID );
-                psa_set_key_usage_flags( &key_attributes, PSA_KEY_USAGE_SIGN );
+                psa_set_key_usage_flags( &key_attributes, PSA_KEY_USAGE_SIGN_HASH );
                 psa_set_key_algorithm( &key_attributes, uxAlgorithm );
                 psa_set_key_type( &key_attributes, uxKeyType );
                 uxStatus = psa_import_key( &key_attributes,
@@ -272,7 +272,7 @@ CK_OBJECT_HANDLE PKCS11PSASaveObject( CK_ATTRIBUTE_PTR pxClass,
             }
             if ( uxStatus == PSA_SUCCESS )
             {
-                psa_set_key_usage_flags( &key_attributes, PSA_KEY_USAGE_VERIFY );
+                psa_set_key_usage_flags( &key_attributes, PSA_KEY_USAGE_VERIFY_HASH );
                 psa_set_key_algorithm( &key_attributes, uxAlgorithm );
                 psa_set_key_type( &key_attributes, uxKeyType );
                 uxStatus = psa_import_key( &key_attributes,
@@ -329,7 +329,7 @@ CK_OBJECT_HANDLE PKCS11PSASaveObject( CK_ATTRIBUTE_PTR pxClass,
             {
                 /* Device public key is saved as persistent key. */
                 psa_set_key_id( &key_attributes, PSA_DEVICE_PUBLIC_KEY_ID );
-                psa_set_key_usage_flags( &key_attributes, PSA_KEY_USAGE_VERIFY );
+                psa_set_key_usage_flags( &key_attributes, PSA_KEY_USAGE_VERIFY_HASH );
                 psa_set_key_algorithm( &key_attributes, uxAlgorithm );
                 psa_set_key_type( &key_attributes, uxKeyType );
                 uxStatus = psa_import_key( &key_attributes,
@@ -378,7 +378,7 @@ CK_OBJECT_HANDLE PKCS11PSASaveObject( CK_ATTRIBUTE_PTR pxClass,
 */
 CK_RV PKCS11PSAGetObjectValue( CK_OBJECT_HANDLE xHandle,
     uint8_t * pucData,
-    uint32_t * pulDataSize,
+    size_t * pulDataSize,
     CK_BBOOL * pIsPrivate )
 {
     CK_RV ulReturn = CKR_OBJECT_HANDLE_INVALID;
