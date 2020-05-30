@@ -282,7 +282,7 @@ CK_OBJECT_HANDLE PKCS11PSASaveObject( CK_ATTRIBUTE_PTR pxClass,
             }
             if ( uxStatus == PSA_SUCCESS )
             {
-                xHandle = eAwsCodeSigningKey;
+                xHandle = eAwsCodeVerifyingKey;
 
                 /* Import the object into P11KeyConfig context. */
                 PKCS11PSAContextImportObject( pxLabel->pValue,
@@ -564,7 +564,7 @@ CK_RV PKCS11PSAGetObjectValue( CK_OBJECT_HANDLE xHandle,
         }
     }
 
-    else if( xHandle == eAwsCodeSigningKey )
+    else if( xHandle == eAwsCodeVerifyingKey )
     {
         /*
          * return reference and size only if key is present in the device and is not private

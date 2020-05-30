@@ -96,7 +96,7 @@ typedef enum eObjectHandles
     eAwsDevicePrivateKey = 1,
     eAwsDevicePublicKey,
     eAwsDeviceCertificate,
-    eAwsCodeSigningKey,
+    eAwsCodeVerifyingKey,
     eAwsJitpCertificate,
     eAwsRootCertificate
 }P11ObjectHandles_t;

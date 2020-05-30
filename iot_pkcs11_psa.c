@@ -1858,7 +1858,7 @@ CK_DEFINE_FUNCTION( CK_RV, C_GetAttributeValue )( CK_SESSION_HANDLE xSession,
                                     break;
 
                                 case eAwsDevicePublicKey:
-                                case eAwsCodeSigningKey:
+                                case eAwsCodeVerifyingKey:
                                     xClass = CKO_PUBLIC_KEY;
                                     break;
 
@@ -2287,6 +2287,42 @@ CK_DECLARE_FUNCTION( CK_RV, C_FindObjects )( CK_SESSION_HANDLE xSession,
                      *     2. The function error.
                      */
                     PKCS11_WARNING_PRINT( ( "Opening device public key fails. \r\n" ) );
+                    xResult = CKR_FUNCTION_FAILED;
+                }
+            }
+            else if( strcmp( ( const char * )pxSession->pxFindObjectLabel,
+                             pkcs11configLABEL_CODE_VERIFICATION_KEY ) == 0 )
+            {
+                uxStatus = psa_open_key( PSA_CODE_VERIFICATION_KEY_ID,
+                                         &uxPsaDeviceKeyHandle );
+
+                if( uxStatus == PSA_SUCCESS )
+                {
+                    /* Add the opened key to xP11Context. */
+                    xResult = prvAddObjectToList( eAwsCodeVerifyingKey,
+                                                  &uxObjectHandle,
+                                                  pxSession->pxFindObjectLabel,
+                                                  strlen( ( const char * ) pxSession->pxFindObjectLabel ) );
+
+                    if( xResult == CKR_OK )
+                    {
+                        /* Import the key into the pkcs#11 PSA configure context. */
+                        PKCS11PSAContextImportObject( pxSession->pxFindObjectLabel,
+                                                      strlen( ( const char * ) pxSession->pxFindObjectLabel ),
+                                                      uxPsaDeviceKeyHandle );
+
+                        /* The device public key is found. */
+                        *pxObject = uxObjectHandle;
+                        *pulObjectCount = 1;
+                    }
+                }
+                else if( uxStatus != PSA_ERROR_DOES_NOT_EXIST )
+                {
+                    /* If not succeed, possible errors are:
+                     *     1. The key is not privisioned(PSA_ERROR_DOES_NOT_EXIST).
+                     *     2. The function error.
+                     */
+                    PKCS11_WARNING_PRINT( ( "Opening Code Verification key fails. \r\n" ) );
                     xResult = CKR_FUNCTION_FAILED;
                 }
             }
