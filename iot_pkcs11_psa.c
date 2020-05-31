@@ -1244,6 +1244,7 @@ CK_DEFINE_FUNCTION( CK_RV, C_Finalize )( CK_VOID_PTR pvReserved )
             /* Close device private key which is a persistent key. Note that here we only close it other than
              * destroying it so that the key can be activated by calling psa_open_key then next time it is used.
              */
+#ifndef pkcs11configTFM_VERSION_1_0
             xResult = PKCS11PSARemoveObject( (uint8_t *)pkcs11configLABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
                                              sizeof( pkcs11configLABEL_DEVICE_PRIVATE_KEY_FOR_TLS ),
                                              FALSE );
@@ -1257,6 +1258,7 @@ CK_DEFINE_FUNCTION( CK_RV, C_Finalize )( CK_VOID_PTR pvReserved )
                                                  sizeof( pkcs11configLABEL_DEVICE_PUBLIC_KEY_FOR_TLS ),
                                                  FALSE );
             }
+#endif
         }
     }
     return xResult;
@@ -2431,7 +2433,6 @@ CK_DECLARE_FUNCTION( CK_RV, C_FindObjects )( CK_SESSION_HANDLE xSession,
             else
             {
                 PKCS11_WARNING_PRINT( ( "WARNING: Object not supported (%s). \r\n", pxSession->pxFindObjectLabel ) );
-                xResult = CKR_ARGUMENTS_BAD;
             }
         }
 
