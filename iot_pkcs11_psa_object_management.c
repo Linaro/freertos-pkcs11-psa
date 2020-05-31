@@ -95,7 +95,6 @@ CK_OBJECT_HANDLE PKCS11PSASaveObject( CK_ATTRIBUTE_PTR pxClass,
                                    ulDataSize,
                                    pucData,
                                    ( psa_storage_create_flags_t ) PSA_STORAGE_FLAG_NONE );
-
             if( uxStatus == PSA_SUCCESS )
             {
                 xHandle = eAwsDeviceCertificate;
@@ -215,7 +214,9 @@ CK_OBJECT_HANDLE PKCS11PSASaveObject( CK_ATTRIBUTE_PTR pxClass,
             if ( uxStatus == PSA_SUCCESS )
             {
                 /* Device private key is saved as persistent key. */
+#ifndef pkcs11configTFM_VERSION_1_0
                 psa_set_key_id( &key_attributes, PSA_DEVICE_PRIVATE_KEY_ID );
+#endif
                 psa_set_key_usage_flags( &key_attributes, PSA_KEY_USAGE_SIGN_HASH );
                 psa_set_key_algorithm( &key_attributes, uxAlgorithm );
                 psa_set_key_type( &key_attributes, uxKeyType );
@@ -331,7 +332,9 @@ CK_OBJECT_HANDLE PKCS11PSASaveObject( CK_ATTRIBUTE_PTR pxClass,
             if( uxStatus == PSA_SUCCESS )
             {
                 /* Device public key is saved as persistent key. */
+#ifndef pkcs11configTFM_VERSION_1_0
                 psa_set_key_id( &key_attributes, PSA_DEVICE_PUBLIC_KEY_ID );
+#endif
                 psa_set_key_usage_flags( &key_attributes, PSA_KEY_USAGE_VERIFY_HASH );
                 psa_set_key_algorithm( &key_attributes, uxAlgorithm );
                 psa_set_key_type( &key_attributes, uxKeyType );

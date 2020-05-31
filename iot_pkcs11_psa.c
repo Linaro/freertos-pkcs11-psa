@@ -2128,6 +2128,84 @@ CK_DECLARE_FUNCTION( CK_RV, C_FindObjectsInit )( CK_SESSION_HANDLE xSession,
 }
 
 /**
+ * @brief Helper function - Find a key object.
+ *
+ * @param[in]  pxSession                    Points to PKCS #11 session.
+ *
+ * @param[in]  xKeyId                       PSA persistent key ID.
+ *
+ * @param[in]  xPalHandle                   PSA pkcs#11 key handle.
+ *
+ * @param[out] pxObject                     Points to the handle of the object to
+ *                                          be found.
+ * @param[out] pulObjectCount               The actual number of objects that are
+ *                                          found. In this port, if an object is found
+ *                                          this value will be 1, otherwise if the
+ *                                          object is not found, it will be set to 0.
+ *
+ * @return CKR_OK if successful.
+ * Else, see <a href="https://tiny.amazon.com/wtscrttv">PKCS #11 specification</a>
+ * for more information.
+ */
+static CK_RV  FindKeyObjects ( P11SessionPtr_t pxSession,
+                               psa_key_id_t xKeyId,
+                               CK_OBJECT_HANDLE xPalHandle,
+                               CK_OBJECT_HANDLE_PTR pxObject,
+                               CK_ULONG_PTR pulObjectCount )
+{
+    CK_RV xResult;
+    psa_key_handle_t uxPsaDeviceKeyHandle = 0;
+    CK_OBJECT_HANDLE uxObjectHandle = 0;
+    psa_status_t uxStatus = PSA_SUCCESS;
+
+    /* Check with PKCS#11 context if the object was previously stored */
+    xResult = PKCS11PSAGetKeyHandle( pxSession->pxFindObjectLabel,
+                                     strlen( ( const char * ) pxSession->pxFindObjectLabel ),
+                                     &uxPsaDeviceKeyHandle );
+    if ( xResult != CKR_OK )
+    {
+        xResult = CKR_OK;
+
+        /* Check with PSA if the object is stored as persistent key. */
+        uxStatus = psa_open_key( xKeyId, &uxPsaDeviceKeyHandle );
+
+        if ( uxStatus == PSA_SUCCESS )
+        {
+            /* Import the key into the PKCS#11 context. */
+            PKCS11PSAContextImportObject( pxSession->pxFindObjectLabel,
+                                          strlen( ( const char * ) pxSession->pxFindObjectLabel ),
+                                          uxPsaDeviceKeyHandle );
+        }
+#ifndef pkcs11configTFM_VERSION_1_0
+        else if ( uxStatus != PSA_ERROR_DOES_NOT_EXIST )
+#else
+        else if ( uxStatus != PSA_ERROR_DOES_NOT_EXIST && uxStatus != PSA_ERROR_NOT_SUPPORTED )
+#endif
+
+        {
+            PKCS11_WARNING_PRINT( ( "WARNING: Opening key (0x%x) fails (0x%x). \n", xKeyId, uxStatus ) );
+            xResult = CKR_FUNCTION_FAILED;
+        }
+    }
+
+    if ( xResult == CKR_OK && uxStatus == PSA_SUCCESS )
+    {
+        /* Add key handle to application object list. */
+        xResult = prvAddObjectToList( xPalHandle,
+                                      &uxObjectHandle,
+                                      pxSession->pxFindObjectLabel,
+                                      strlen( ( const char * ) pxSession->pxFindObjectLabel ) );
+        if ( xResult == CKR_OK )
+        {
+            *pxObject = uxObjectHandle;
+            *pulObjectCount = 1;
+        }
+    }
+    return xResult;
+}
+
+
+/**
  * @brief Find an object.
  *
  * \sa C_FindObjectsInit() which must be called before calling C_FindObjects()
@@ -2168,11 +2246,9 @@ CK_DECLARE_FUNCTION( CK_RV, C_FindObjects )( CK_SESSION_HANDLE xSession,
 
     CK_BYTE_PTR pcObjectValue = NULL;
     uint32_t xObjectLength = 0;
-    CK_BBOOL xIsPrivate = CK_TRUE;
     CK_BYTE xByte = 0;
     CK_OBJECT_HANDLE xPalHandle = CK_INVALID_HANDLE;
     uint32_t ulIndex;
-    psa_key_handle_t uxPsaDeviceKeyHandle = 0;
     CK_OBJECT_HANDLE uxObjectHandle = 0;
     psa_status_t uxStatus;
 
@@ -2217,114 +2293,32 @@ CK_DECLARE_FUNCTION( CK_RV, C_FindObjects )( CK_SESSION_HANDLE xSession,
         }
         else
         {
-            /* Open the existing persistent key and import it into the pkcs11 context. */
             if( strcmp( ( const char * )pxSession->pxFindObjectLabel,
                         pkcs11configLABEL_DEVICE_PRIVATE_KEY_FOR_TLS ) == 0 )
             {
-                uxStatus = psa_open_key( PSA_DEVICE_PRIVATE_KEY_ID,
-                                         &uxPsaDeviceKeyHandle );
-
-                if( uxStatus == PSA_SUCCESS )
-                {
-                    /* Add the opened key to xP11Context. */
-                    xResult = prvAddObjectToList( eAwsDevicePrivateKey,
-                                                  &uxObjectHandle,
-                                                  pxSession->pxFindObjectLabel,
-                                                  strlen( ( const char * ) pxSession->pxFindObjectLabel ) );
-
-                    if( xResult == CKR_OK )
-                    {
-                        /* Import the key into the pkcs#11 PSA context. */
-                        PKCS11PSAContextImportObject( pxSession->pxFindObjectLabel,
-                                                      strlen( ( const char * ) pxSession->pxFindObjectLabel ),
-                                                      uxPsaDeviceKeyHandle );
-
-                        /* The device private key is found. */
-                        *pxObject = uxObjectHandle;
-                        *pulObjectCount = 1;
-                    }
-                }
-                else if( uxStatus != PSA_ERROR_DOES_NOT_EXIST )
-                {
-                    /* If not succeed, possible errors are:
-                     *     1. The key is not privisioned(PSA_ERROR_DOES_NOT_EXIST).
-                     *     2. The function error.
-                     */
-                    PKCS11_WARNING_PRINT( ( "Opening device private key fails. \r\n" ) );
-                    xResult = CKR_FUNCTION_FAILED;
-                }
+                xResult = FindKeyObjects( pxSession,
+                                          PSA_DEVICE_PRIVATE_KEY_ID,
+                                          eAwsDevicePrivateKey,
+                                          pxObject,
+                                          pulObjectCount );
             }
             else if( strcmp( ( const char * )pxSession->pxFindObjectLabel,
                              pkcs11configLABEL_DEVICE_PUBLIC_KEY_FOR_TLS ) == 0 )
             {
-                uxStatus = psa_open_key( PSA_DEVICE_PUBLIC_KEY_ID,
-                                         &uxPsaDeviceKeyHandle );
-
-                if( uxStatus == PSA_SUCCESS )
-                {
-                    /* Add the opened key to xP11Context. */
-                    xResult = prvAddObjectToList( eAwsDevicePublicKey,
-                                                  &uxObjectHandle,
-                                                  pxSession->pxFindObjectLabel,
-                                                  strlen( ( const char * ) pxSession->pxFindObjectLabel ) );
-
-                    if( xResult == CKR_OK )
-                    {
-                        /* Import the key into the pkcs#11 PSA configure context. */
-                        PKCS11PSAContextImportObject( pxSession->pxFindObjectLabel,
-                                                      strlen( ( const char * ) pxSession->pxFindObjectLabel ),
-                                                      uxPsaDeviceKeyHandle );
-
-                        /* The device public key is found. */
-                        *pxObject = uxObjectHandle;
-                        *pulObjectCount = 1;
-                    }
-                }
-                else if( uxStatus != PSA_ERROR_DOES_NOT_EXIST )
-                {
-                    /* If not succeed, possible errors are:
-                     *     1. The key is not privisioned(PSA_ERROR_DOES_NOT_EXIST).
-                     *     2. The function error.
-                     */
-                    PKCS11_WARNING_PRINT( ( "Opening device public key fails. \r\n" ) );
-                    xResult = CKR_FUNCTION_FAILED;
-                }
+                xResult = FindKeyObjects( pxSession,
+                                          PSA_DEVICE_PUBLIC_KEY_ID,
+                                          eAwsDevicePublicKey,
+                                          pxObject,
+                                          pulObjectCount );
             }
             else if( strcmp( ( const char * )pxSession->pxFindObjectLabel,
                              pkcs11configLABEL_CODE_VERIFICATION_KEY ) == 0 )
             {
-                uxStatus = psa_open_key( PSA_CODE_VERIFICATION_KEY_ID,
-                                         &uxPsaDeviceKeyHandle );
-
-                if( uxStatus == PSA_SUCCESS )
-                {
-                    /* Add the opened key to xP11Context. */
-                    xResult = prvAddObjectToList( eAwsCodeVerifyingKey,
-                                                  &uxObjectHandle,
-                                                  pxSession->pxFindObjectLabel,
-                                                  strlen( ( const char * ) pxSession->pxFindObjectLabel ) );
-
-                    if( xResult == CKR_OK )
-                    {
-                        /* Import the key into the pkcs#11 PSA configure context. */
-                        PKCS11PSAContextImportObject( pxSession->pxFindObjectLabel,
-                                                      strlen( ( const char * ) pxSession->pxFindObjectLabel ),
-                                                      uxPsaDeviceKeyHandle );
-
-                        /* The device public key is found. */
-                        *pxObject = uxObjectHandle;
-                        *pulObjectCount = 1;
-                    }
-                }
-                else if( uxStatus != PSA_ERROR_DOES_NOT_EXIST )
-                {
-                    /* If not succeed, possible errors are:
-                     *     1. The key is not privisioned(PSA_ERROR_DOES_NOT_EXIST).
-                     *     2. The function error.
-                     */
-                    PKCS11_WARNING_PRINT( ( "Opening Code Verification key fails. \r\n" ) );
-                    xResult = CKR_FUNCTION_FAILED;
-                }
+                xResult = FindKeyObjects( pxSession,
+                                          PSA_CODE_VERIFICATION_KEY_ID,
+                                          eAwsCodeVerifyingKey,
+                                          pxObject,
+                                          pulObjectCount );
             }
             else if( strcmp( ( const char * )pxSession->pxFindObjectLabel,
                              pkcs11configLABEL_DEVICE_CERTIFICATE_FOR_TLS ) == 0 )
@@ -2358,7 +2352,7 @@ CK_DECLARE_FUNCTION( CK_RV, C_FindObjects )( CK_SESSION_HANDLE xSession,
                 }
                 else if( uxStatus != PSA_ERROR_DOES_NOT_EXIST )
                 {
-                    PKCS11_WARNING_PRINT( ( "psa ps getting device certificate key fails. \r\n" ) );
+                    PKCS11_WARNING_PRINT( ( "psa ps getting device certificate fails. \r\n" ) );
                     xResult = CKR_FUNCTION_FAILED;
                 }
             }
@@ -2394,7 +2388,7 @@ CK_DECLARE_FUNCTION( CK_RV, C_FindObjects )( CK_SESSION_HANDLE xSession,
                 }
                 else if( uxStatus != PSA_ERROR_DOES_NOT_EXIST )
                 {
-                    PKCS11_WARNING_PRINT( ( "psa ps getting device certificate key fails. \r\n" ) );
+                    PKCS11_WARNING_PRINT( ( "psa ps getting root certificate fails. \r\n" ) );
                     xResult = CKR_FUNCTION_FAILED;
                 }
             }
@@ -2430,22 +2424,22 @@ CK_DECLARE_FUNCTION( CK_RV, C_FindObjects )( CK_SESSION_HANDLE xSession,
                 }
                 else if( uxStatus != PSA_ERROR_DOES_NOT_EXIST )
                 {
-                    PKCS11_WARNING_PRINT( ( "psa ps getting device certificate key fails. \r\n" ) );
+                    PKCS11_WARNING_PRINT( ( "psa ps getting JITP certificate fails. \r\n" ) );
                     xResult = CKR_FUNCTION_FAILED;
                 }
             }
             else
             {
+                PKCS11_WARNING_PRINT( ( "WARNING: Object not supported (%s). \r\n", pxSession->pxFindObjectLabel ) );
                 xResult = CKR_ARGUMENTS_BAD;
             }
         }
 
-        if( *pulObjectCount == 0 )
+        if ( *pulObjectCount == 0 )
         {
             PKCS11_WARNING_PRINT( ( "WARN: Object with label '%s' not found. \r\n", ( char * ) pxSession->pxFindObjectLabel ) );
         }
     }
-
     return xResult;
 }
 
@@ -3514,7 +3508,9 @@ CK_DEFINE_FUNCTION( CK_RV, C_GenerateKeyPair )( CK_SESSION_HANDLE xSession,
                     pkcs11configLABEL_DEVICE_PRIVATE_KEY_FOR_TLS ) == 0 )
         {
             /* If this is the device private key, then create it as a persistent key. */
+#ifndef pkcs11configTFM_VERSION_1_0
             psa_set_key_id( &private_key_attributes, PSA_DEVICE_PRIVATE_KEY_ID );
+#endif
         }
         psa_set_key_usage_flags( &private_key_attributes, PSA_KEY_USAGE_SIGN_HASH );
         psa_set_key_algorithm( &private_key_attributes, uxAlgorithm );
@@ -3550,7 +3546,9 @@ CK_DEFINE_FUNCTION( CK_RV, C_GenerateKeyPair )( CK_SESSION_HANDLE xSession,
                         pkcs11configLABEL_DEVICE_PUBLIC_KEY_FOR_TLS ) == 0 )
             {
                 /* If this is the device public key, then create it as a persistent key. */
+#ifndef pkcs11configTFM_VERSION_1_0
                 psa_set_key_id( &public_key_attributes, PSA_DEVICE_PUBLIC_KEY_ID );
+#endif
             }
             psa_set_key_usage_flags( &public_key_attributes, PSA_KEY_USAGE_VERIFY_HASH );
             psa_set_key_algorithm( &public_key_attributes, uxAlgorithm );
