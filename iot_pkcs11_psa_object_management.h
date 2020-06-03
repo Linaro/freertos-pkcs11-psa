@@ -22,8 +22,8 @@
  */
 
 /*
- * This file is derivative of amazon-freertos\libraries\3rdparty\mbedtls\library\
- * pkparse.c(amazon-freertos commit 74875b1d2)
+ * This file is derivative of amazon-freertos\vendors\st\boards\stm32l475_discovery\
+ * ports\pkcs11\iot_pkcs11_pal.c(amazon-freertos commit 74875b1d2)
  */
 
 #ifndef __IOT_PKCS11_PSA_OBJECT_MANAGEMENT_H__

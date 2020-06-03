@@ -21,6 +21,11 @@
  *
  */
 
+/*
+ * This file is derivative of amazon-freertos\libraries\abstractions\pkcs11\mbedtls
+ * \iot_pkcs11_mbedtls.c(amazon-freertos commit 74875b1d2)
+ */
+
 /**
  * @file iot_pkcs11_psa.c
  * @brief PSA based PKCS#11 implementation.

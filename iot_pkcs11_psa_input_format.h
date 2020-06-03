@@ -16,6 +16,11 @@
  *
  */
 
+/*
+ * This file is derivative of amazon-freertos\libraries\3rdparty\mbedtls\library\
+ * pkparse.c(amazon-freertos commit 74875b1d2)
+ */
+
 #ifndef __IOT_PKCS11_PSA_INPUT_FORMAT_H__
 #define __IOT_PKCS11_PSA_INPUT_FORMAT_H__
 

@@ -16,6 +16,11 @@
  *
  */
 
+/*
+ * This file is derivative of amazon-freertos\libraries\3rdparty\mbedtls\library\
+ * pkparse.c(amazon-freertos commit 74875b1d2)
+ */
+
 /**
  * @file iot_pkcs11_psa_input_format.c
  * @brief Functions to get the PSA API format input.
