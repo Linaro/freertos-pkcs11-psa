@@ -55,6 +55,10 @@
 #define PSA_DEVICE_PUBLIC_KEY_ID      ( ( psa_key_id_t )0x10 )
 #endif
 
+#ifndef PSA_CODE_VERIFICATION_KEY_ID
+#define PSA_CODE_VERIFICATION_KEY_ID  ( ( psa_key_id_t )0x11 )
+#endif
+
 /* UID that indicates the device certificate data in PSA protected storage service. */
 #ifndef PSA_DEVICE_CERTIFICATE_UID
 #define PSA_DEVICE_CERTIFICATE_UID    ( ( psa_storage_uid_t )5 )
@@ -92,7 +96,7 @@ typedef enum eObjectHandles
     eAwsDevicePrivateKey = 1,
     eAwsDevicePublicKey,
     eAwsDeviceCertificate,
-    eAwsCodeSigningKey,
+    eAwsCodeVerifyingKey,
     eAwsJitpCertificate,
     eAwsRootCertificate
 }P11ObjectHandles_t;
@@ -157,7 +161,7 @@ CK_OBJECT_HANDLE PKCS11PSASaveObject( CK_ATTRIBUTE_PTR pxClass,
 */
 CK_RV PKCS11PSAGetObjectValue( CK_OBJECT_HANDLE xHandle,
     uint8_t * ppucData,
-    uint32_t * pulDataSize,
+    size_t * pulDataSize,
     CK_BBOOL * pIsPrivate );
 
 /**
