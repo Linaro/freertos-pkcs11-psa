@@ -11,6 +11,8 @@ For example, objective storage and signing.
 The original PKCS#11 API implementation in Amazon FreeRTOS is based on [mbedTLS](https://github.com/ARMmbed/mbedtls).
 This project is the PSA based PKCS#11 API implementation. This is done by adding the shim layer between these two API sets.
 
+In general, this shim layer maps the PKCS#11 APIs to PSA Cryptography and Storage APIs. It follows the PSA Cryptography API V1.0 beta3 and PSA Storage API V1.0. Certificate objects and key objects are protected by PSA secure service. By default, the device private/public keys are persistent while the code verify key is volatile.
+
 # License
 
 Please check the **License.md** file in this project root folder for the detailed license information.
