@@ -3,6 +3,8 @@ name: freertos-pkcs11-psa CI
 on:
   push:
   pull_request:
+  schedule:
+  - cron: "0 4 * * *"
 
 jobs:
   build:
