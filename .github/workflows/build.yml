@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     name: Build cypress/CY8CKIT_064S0S2_4343W
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - name: Clone
       uses: actions/checkout@v1
