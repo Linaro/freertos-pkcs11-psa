@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2019 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
- * Copyright (c) 2019-2020 Arm Limited. All Rights Reserved.
+ * Copyright (c) 2019-2021 Arm Limited. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -3502,7 +3502,7 @@ CK_DEFINE_FUNCTION( CK_RV, C_GenerateKeyPair )( CK_SESSION_HANDLE xSession,
     if( xResult == CKR_OK )
     {
         uxAlgorithm = PSA_ALG_ECDSA( PSA_ALG_SHA_256 );
-        uxKeyType = PSA_KEY_TYPE_ECC_KEY_PAIR( PSA_ECC_CURVE_SECP256R1 );
+        uxKeyType = PSA_KEY_TYPE_ECC_KEY_PAIR( PSA_ECC_FAMILY_SECP_R1 );
         if( strcmp( pxPrivateLabel->pValue,
                     pkcs11configLABEL_DEVICE_PRIVATE_KEY_FOR_TLS ) == 0 )
         {
@@ -3539,7 +3539,7 @@ CK_DEFINE_FUNCTION( CK_RV, C_GenerateKeyPair )( CK_SESSION_HANDLE xSession,
         }
         if ( uxStatus == PSA_SUCCESS )
         {
-            uxKeyType = PSA_KEY_TYPE_ECC_PUBLIC_KEY(PSA_ECC_CURVE_SECP256R1);
+            uxKeyType = PSA_KEY_TYPE_ECC_PUBLIC_KEY(PSA_ECC_FAMILY_SECP_R1);
             uxAlgorithm = PSA_ALG_ECDSA( PSA_ALG_SHA_256 );
             if( strcmp( pxPublicLabel->pValue,
                         pkcs11configLABEL_DEVICE_PUBLIC_KEY_FOR_TLS ) == 0 )
