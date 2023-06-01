@@ -44,9 +44,6 @@
 #include "iot_pkcs11_psa_object_management.h"
 #include "iot_pkcs11_psa_input_format.h"
 
-/* Crypto include. */
-#include "iot_crypto.h"
-
 /* mbedTLS includes. */
 #include "mbedtls/pk.h"
 #include "mbedtls/pk_internal.h"
@@ -1181,8 +1178,6 @@ CK_RV prvMbedTLS_Initialize( void )
 
     if( xResult == CKR_OK )
     {
-        CRYPTO_Init();
-
         /* PSA Crypto library should haven been initialised successfully in secure world. */
         xP11Context.xIsInitialized = CK_TRUE;
     }
