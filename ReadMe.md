@@ -11,7 +11,7 @@ For example, objective storage and signing.
 The original PKCS#11 API implementation in Amazon FreeRTOS is based on [mbedTLS](https://github.com/ARMmbed/mbedtls).
 This project is the PSA based PKCS#11 API implementation. This is done by adding the shim layer between these two API sets.
 
-In general, this shim layer maps the PKCS#11 APIs to PSA Cryptography and Storage APIs V1.0. It follows the same PSA Cryptography API version supported in [mbedtls-3.0.0](https://github.com/ARMmbed/mbedtls/tree/mbedtls-3.0.0). Certificate objects and key objects are protected by PSA secure service. By default, the device private/public keys are persistent while the code verify key is volatile.
+In general, this shim layer maps the PKCS#11 APIs to PSA Cryptography and Storage APIs V1.0. It follows the same PSA Cryptography API version supported in [mbedtls-3.4.0](https://github.com/ARMmbed/mbedtls/tree/mbedtls-3.4.0). Certificate objects and key objects are protected by PSA secure service. By default, the device private/public keys are persistent while the code verify key is volatile.
 
 # License
 
@@ -41,7 +41,7 @@ In Amazon FreeRTOS, this shim layer is cloned into `libraries/abstractions/pkcs1
 
 [TF-M](https://git.trustedfirmware.org/TF-M/trusted-firmware-m.git/) is a PSA implementation. It implements the PSA Firmware Framework API and developer API such as Secure Storage, Cryptography, Initial Attestation, etc. Refer to [PSA website](https://developer.arm.com/architectures/security-architectures/platform-security-architecture) for more details.
 
-This version of PKCS#11 shim layer is supported by [TF-M v1.5.0](https://git.trustedfirmware.org/TF-M/trusted-firmware-m.git/tag/?h=TF-Mv1.5.0) and [TF-M v1.6.0](https://git.trustedfirmware.org/TF-M/trusted-firmware-m.git/tag/?h=TF-Mv1.6.0).
+This version of PKCS#11 shim layer is supported by [TF-M v1.8.0](https://git.trustedfirmware.org/TF-M/trusted-firmware-m.git/tag/?h=TF-Mv1.8.0).
 
 Please follow the [Build instructions](https://tf-m-user-guide.trustedfirmware.org/docs/technical_references/instructions/tfm_build_instruction.html) of TF-M to build the secure side image for your platform.
 
