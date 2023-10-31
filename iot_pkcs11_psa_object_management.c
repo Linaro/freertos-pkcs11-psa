@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2017 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
- * Copyright (c) 2019-2021 Arm Limited. All Rights Reserved.
+ * Copyright (c) 2019-2023 Arm Limited. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -310,10 +310,24 @@ CK_OBJECT_HANDLE PKCS11PSASaveObject( CK_ATTRIBUTE_PTR pxClass,
             switch ( mbedtls_pk_get_type( pvContext ) )
             {
                 case MBEDTLS_PK_RSA:
-                    /**
-                     * The RSA private key should contain the public key. So it should not go here.
-                     */
-                    uxStatus = PSA_ERROR_INVALID_ARGUMENT;
+                    uxKeyType = PSA_KEY_TYPE_RSA_PUBLIC_KEY;
+                    pucKeyData = pucData;
+                    ulKeyDataSize = ulDataSize;
+                    switch ( ( ( mbedtls_rsa_context * ) ( pvContext->pk_ctx ) )->padding )
+                    {
+                        case MBEDTLS_RSA_PKCS_V15:
+                            uxAlgorithm = PSA_ALG_RSA_PKCS1V15_SIGN( PSA_ALG_SHA_256 );
+                            break;
+
+                        case MBEDTLS_RSA_PKCS_V21:
+                            uxAlgorithm = PSA_ALG_RSA_PSS( PSA_ALG_SHA_256 );
+                            break;
+
+                        default:
+                            uxAlgorithm = 0;
+                            uxStatus = PSA_ERROR_INVALID_ARGUMENT;
+                            break;
+                    }
                     break;
 
                 case MBEDTLS_PK_ECKEY:
@@ -369,7 +383,24 @@ CK_OBJECT_HANDLE PKCS11PSASaveObject( CK_ATTRIBUTE_PTR pxClass,
             switch ( mbedtls_pk_get_type( pvContext ) )
             {
                 case MBEDTLS_PK_RSA:
-                    uxStatus = PSA_ERROR_INVALID_ARGUMENT;
+                    uxKeyType = PSA_KEY_TYPE_RSA_PUBLIC_KEY;
+                    pucKeyData = pucData;
+                    ulKeyDataSize = ulDataSize;
+                    switch ( ( ( mbedtls_rsa_context * ) ( pvContext->pk_ctx ) )->padding )
+                    {
+                        case MBEDTLS_RSA_PKCS_V15:
+                            uxAlgorithm = PSA_ALG_RSA_PKCS1V15_SIGN( PSA_ALG_SHA_256 );
+                            break;
+
+                        case MBEDTLS_RSA_PKCS_V21:
+                            uxAlgorithm = PSA_ALG_RSA_PSS( PSA_ALG_SHA_256 );
+                            break;
+
+                        default:
+                            uxAlgorithm = 0;
+                            uxStatus = PSA_ERROR_INVALID_ARGUMENT;
+                            break;
+                    }
                     break;
 
                 case MBEDTLS_PK_ECKEY:

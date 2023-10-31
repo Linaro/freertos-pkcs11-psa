@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2019 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
- * Copyright (c) 2019-2021 Arm Limited. All Rights Reserved.
+ * Copyright (c) 2019-2023 Arm Limited. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -819,7 +819,7 @@ CK_RV prvCreatePrivateKey( CK_ATTRIBUTE_PTR pxTemplate,
         if( pxRsaCtx != NULL )
         {
             xMbedContext.pk_ctx = pxRsaCtx;
-            xMbedContext.pk_info = &mbedtls_rsa_info;
+            xMbedContext.pk_info = mbedtls_pk_info_from_type( MBEDTLS_PK_RSA );
             xResult = prvCreateRsaPrivateKey( &xMbedContext,
                                               &pxLabel,
                                               &pxClass,
@@ -928,6 +928,114 @@ CK_RV prvCreatePrivateKey( CK_ATTRIBUTE_PTR pxTemplate,
     if( pxDerKey != NULL )
     {
         vPortFree( pxDerKey );
+    }
+
+    return xResult;
+}
+
+/* Helper function for parsing RSA Public Key attribute templates
+ * for C_CreateObject. */
+CK_RV prvCreateRsaPublicKey( mbedtls_pk_context * pxMbedContext,
+                             CK_ATTRIBUTE_PTR * ppxLabel,
+                             CK_ATTRIBUTE_PTR * ppxClass,
+                             CK_ATTRIBUTE_PTR pxTemplate,
+                             CK_ULONG ulCount,
+                             CK_OBJECT_HANDLE_PTR pxObject )
+{
+    CK_RV xResult = CKR_OK;
+    mbedtls_rsa_context * pxRsaContext;
+    int lMbedReturn = 0;
+    CK_BBOOL xBool;
+    uint32_t ulIndex;
+    CK_ATTRIBUTE xAttribute;
+
+    *ppxLabel = NULL;
+    *ppxClass = NULL;
+    pxRsaContext = pxMbedContext->pk_ctx;
+    mbedtls_rsa_init( pxRsaContext, MBEDTLS_RSA_PKCS_V15, 0 /*ignored.*/ );
+
+    /* Parse template and collect the relevant parts. */
+    for( ulIndex = 0; ulIndex < ulCount; ulIndex++ )
+    {
+        xAttribute = pxTemplate[ ulIndex ];
+
+        switch( xAttribute.type )
+        {
+            case ( CKA_CLASS ):
+                *ppxClass = &pxTemplate[ ulIndex ];
+                break;
+
+            case ( CKA_KEY_TYPE ):
+
+                /* Do nothing.
+                 * Key type & object type were checked previously.
+                 */
+                break;
+
+            case ( CKA_TOKEN ):
+                memcpy( &xBool, xAttribute.pValue, sizeof( CK_BBOOL ) );
+
+                if( xBool != CK_TRUE )
+                {
+                    PKCS11_PRINT( ( "ERROR: Only token key creation is supported. \r\n" ) );
+                    xResult = CKR_ATTRIBUTE_VALUE_INVALID;
+                }
+
+                break;
+
+            case ( CKA_LABEL ):
+
+                if( xAttribute.ulValueLen <= pkcs11configMAX_LABEL_LENGTH )
+                {
+                    *ppxLabel = &pxTemplate[ ulIndex ];
+                }
+                else
+                {
+                    xResult = CKR_DATA_LEN_RANGE;
+                }
+
+                break;
+
+            case ( CKA_VERIFY ):
+                memcpy( &xBool, xAttribute.pValue, xAttribute.ulValueLen );
+
+                if( xBool != CK_TRUE )
+                {
+                    PKCS11_PRINT( ( "Only RSA public keys with verify permissions supported. \r\n" ) );
+                    xResult = CKR_ATTRIBUTE_VALUE_INVALID;
+                }
+
+                break;
+
+            case ( CKA_MODULUS ):
+                lMbedReturn = mbedtls_rsa_import_raw( pxRsaContext,
+                                                       xAttribute.pValue, xAttribute.ulValueLen, /* N */
+                                                       NULL, 0,                                  /* P */
+                                                       NULL, 0,                                  /* Q */
+                                                       NULL, 0,                                  /* D */
+                                                       NULL, 0 );                                /* E */
+                break;
+
+            case ( CKA_PUBLIC_EXPONENT ):
+                lMbedReturn = mbedtls_rsa_import_raw( pxRsaContext,
+                                                       NULL, 0,                                    /* N */
+                                                       NULL, 0,                                    /* P */
+                                                       NULL, 0,                                    /* Q */
+                                                       NULL, 0,                                    /* D */
+                                                       xAttribute.pValue, xAttribute.ulValueLen ); /* E */
+                break;
+
+            default:
+                PKCS11_PRINT( ( "Unknown attribute found for RSA public key. %d \r\n", xAttribute.type ) );
+                xResult = CKR_TEMPLATE_INCONSISTENT;
+                break;
+        }
+
+        if( lMbedReturn != 0 )
+        {
+            xResult = CKR_ATTRIBUTE_VALUE_INVALID;
+            break;
+        }
     }
 
     return xResult;
@@ -1056,13 +1164,32 @@ CK_RV prvCreatePublicKey( CK_ATTRIBUTE_PTR pxTemplate,
     CK_ATTRIBUTE_PTR pxLabel = NULL;
     CK_ATTRIBUTE_PTR pxClass = NULL;
     CK_OBJECT_HANDLE xPalHandle = CK_INVALID_HANDLE;
-    mbedtls_pk_init( &xMbedContext );
+    mbedtls_rsa_context * pxRsaCtx = NULL;
     mbedtls_ecp_keypair * pxKeyPair;
+
+    mbedtls_pk_init( &xMbedContext );
 
     prvGetKeyType( &xKeyType, pxTemplate, ulCount );
     if( xKeyType == CKK_RSA )
     {
-        xResult = CKR_ATTRIBUTE_TYPE_INVALID;
+        /* mbedtls_rsa_context must be malloc'ed to use with mbedtls_pk_free function. */
+        pxRsaCtx = pvPortMalloc( sizeof( mbedtls_rsa_context ) );
+
+        if( pxRsaCtx != NULL )
+        {
+            xMbedContext.pk_ctx = pxRsaCtx;
+            xMbedContext.pk_info = mbedtls_pk_info_from_type( MBEDTLS_PK_RSA );
+            xResult = prvCreateRsaPublicKey( &xMbedContext,
+                                             &pxLabel,
+                                             &pxClass,
+                                             pxTemplate,
+                                             ulCount,
+                                             pxObject );
+        }
+        else
+        {
+            xResult = CKR_HOST_MEMORY;
+        }
     }
 
     #if ( pkcs11configSUPPRESS_ECDSA_MECHANISM != 1 )
@@ -1650,6 +1777,13 @@ CK_RV prvGetObjectClass( CK_ATTRIBUTE_PTR pxTemplate,
  * <tr>                               <td>CKA_EXPONENT_1
  * <tr>                               <td>CKA_EXPONENT_2
  * <tr>                               <td>CKA_COEFFICIENT
+ * <tr><td rowspan="13">RSA Public Key<td>CKA_CLASS
+ * <tr>                               <td>CKA_KEY_TYPE
+ * <tr>                               <td>CKA_TOKEN
+ * <tr>                               <td>CKA_LABEL
+ * <tr>                               <td>CKA_VERIFY
+ * <tr>                               <td>CKA_MODULUS
+ * <tr>                               <td>CKA_PUBLIC_EXPONENT
  * </table>
  *
  * @return CKR_OK if successful.
