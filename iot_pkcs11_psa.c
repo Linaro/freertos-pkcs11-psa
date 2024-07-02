@@ -38,6 +38,8 @@
 /* FreeRTOS includes. */
 #include "FreeRTOS.h"
 
+#define MBEDTLS_ALLOW_PRIVATE_ACCESS
+
 /* PKCS#11 includes. */
 #include "core_pkcs11_config.h"
 #include "core_pkcs11.h"
@@ -46,7 +48,6 @@
 
 /* mbedTLS includes. */
 #include "mbedtls/pk.h"
-#include "mbedtls/pk_internal.h"
 
 #define PKCS11_PRINT( X )            vLoggingPrintf X
 #define PKCS11_WARNING_PRINT( X )    /* vLoggingPrintf  X */
@@ -646,7 +647,7 @@ CK_RV prvCreateRsaPrivateKey( mbedtls_pk_context * pxMbedContext,
     *ppxLabel = NULL;
     *ppxClass = NULL;
     pxRsaContext = pxMbedContext->pk_ctx;
-    mbedtls_rsa_init( pxRsaContext, MBEDTLS_RSA_PKCS_V15, 0 /*ignored.*/ );
+    mbedtls_rsa_init( pxRsaContext );
 
     /* Parse template and collect the relevant parts. */
     for( ulIndex = 0; ulIndex < ulCount; ulIndex++ )
@@ -819,7 +820,7 @@ CK_RV prvCreatePrivateKey( CK_ATTRIBUTE_PTR pxTemplate,
         if( pxRsaCtx != NULL )
         {
             xMbedContext.pk_ctx = pxRsaCtx;
-            xMbedContext.pk_info = &mbedtls_rsa_info;
+            xMbedContext.pk_info = mbedtls_pk_info_from_type(MBEDTLS_PK_RSA);
             xResult = prvCreateRsaPrivateKey( &xMbedContext,
                                               &pxLabel,
                                               &pxClass,
@@ -851,7 +852,7 @@ CK_RV prvCreatePrivateKey( CK_ATTRIBUTE_PTR pxTemplate,
             if( pxKeyPair != NULL )
             {
                 /* Initialize the info. */
-                xMbedContext.pk_info = &mbedtls_eckey_info;
+                xMbedContext.pk_info = mbedtls_pk_info_from_type(MBEDTLS_PK_ECKEY);
 
                 /* Initialize the context. */
                 xMbedContext.pk_ctx = pxKeyPair;
@@ -1082,7 +1083,7 @@ CK_RV prvCreatePublicKey( CK_ATTRIBUTE_PTR pxTemplate,
             if( pxKeyPair != NULL )
             {
                 /* Initialize the info. */
-                xMbedContext.pk_info = &mbedtls_eckey_info;
+                xMbedContext.pk_info = mbedtls_pk_info_from_type(MBEDTLS_PK_ECKEY);;
 
                 /* Initialize the context. */
                 xMbedContext.pk_ctx = pxKeyPair;

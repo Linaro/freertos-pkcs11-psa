@@ -27,7 +27,6 @@
 /* mbedTLS includes. */
 #include "mbedtls/pk.h"
 #include "mbedtls/asn1.h"
-#include "mbedtls/pk_internal.h"
 #include "mbedtls/oid.h"
 
 #define pkcs11DER_ENCODED_OID_P256_LEGNTH    19
