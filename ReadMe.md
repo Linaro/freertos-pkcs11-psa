@@ -41,7 +41,7 @@ In Amazon FreeRTOS, this shim layer is cloned into `libraries/abstractions/pkcs1
 
 [TF-M](https://git.trustedfirmware.org/TF-M/trusted-firmware-m.git/) is a PSA implementation. It implements the PSA Firmware Framework API and developer API such as Secure Storage, Cryptography, Initial Attestation, etc. Refer to [PSA website](https://developer.arm.com/architectures/security-architectures/platform-security-architecture) for more details.
 
-This version of PKCS#11 shim layer is supported by [TF-M v1.8.0](https://git.trustedfirmware.org/TF-M/trusted-firmware-m.git/tag/?h=TF-Mv1.8.0).
+This version of PKCS#11 shim layer is supported by [TF-M v2.1.0](https://git.trustedfirmware.org/TF-M/trusted-firmware-m.git/tag/?h=TF-Mv2.1.0).
 
 Please follow the [Build instructions](https://tf-m-user-guide.trustedfirmware.org/docs/technical_references/instructions/tfm_build_instruction.html) of TF-M to build the secure side image for your platform.
 
