@@ -2155,6 +2155,7 @@ static CK_RV  FindKeyObjects ( P11SessionPtr_t pxSession,
     psa_key_handle_t uxPsaDeviceKeyHandle = 0;
     CK_OBJECT_HANDLE uxObjectHandle = 0;
     psa_status_t uxStatus = PSA_SUCCESS;
+    psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
 
     /* Check with PKCS#11 context if the object was previously stored */
     xResult = PKCS11PSAGetKeyHandle( pxSession->pxFindObjectLabel,
@@ -2164,8 +2165,8 @@ static CK_RV  FindKeyObjects ( P11SessionPtr_t pxSession,
     {
         xResult = CKR_OK;
 
-        /* Check with PSA if the object is stored as persistent key. */
-        uxStatus = psa_open_key( xKeyId, &uxPsaDeviceKeyHandle );
+        /* Check with PSA if the object is stored as persistent/volatile key. */
+        uxStatus = psa_get_key_attributes(xKeyId, &attributes);
 
         if ( uxStatus == PSA_SUCCESS )
         {
@@ -2175,9 +2176,9 @@ static CK_RV  FindKeyObjects ( P11SessionPtr_t pxSession,
                                           uxPsaDeviceKeyHandle );
         }
 #ifndef pkcs11configTFM_VERSION_1_0
-        else if ( uxStatus != PSA_ERROR_DOES_NOT_EXIST )
+        else if ( uxStatus != PSA_ERROR_INVALID_HANDLE )
 #else
-        else if ( uxStatus != PSA_ERROR_DOES_NOT_EXIST && uxStatus != PSA_ERROR_NOT_SUPPORTED )
+        else if ( uxStatus != PSA_ERROR_INVALID_HANDLE && uxStatus != PSA_ERROR_NOT_SUPPORTED )
 #endif
 
         {
@@ -2437,6 +2438,7 @@ CK_DECLARE_FUNCTION( CK_RV, C_FindObjects )( CK_SESSION_HANDLE xSession,
             PKCS11_WARNING_PRINT( ( "WARN: Object with label '%s' not found. \r\n", ( char * ) pxSession->pxFindObjectLabel ) );
         }
     }
+
     return xResult;
 }
 
