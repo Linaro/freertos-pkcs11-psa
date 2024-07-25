@@ -2173,7 +2173,7 @@ static CK_RV  FindKeyObjects ( P11SessionPtr_t pxSession,
             /* Import the key into the PKCS#11 context. */
             PKCS11PSAContextImportObject( pxSession->pxFindObjectLabel,
                                           strlen( ( const char * ) pxSession->pxFindObjectLabel ),
-                                          uxPsaDeviceKeyHandle );
+                                          xKeyId );
         }
 #ifndef pkcs11configTFM_VERSION_1_0
         else if ( uxStatus != PSA_ERROR_INVALID_HANDLE )
